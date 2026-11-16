@@ -160,6 +160,23 @@ export default function Home() {
                 </p>
               )}
 
+              {!result.embedUrl && !result.embedHtml && (
+                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  {result.platform === "Dzen" ? (
+                    <>
+                      Дзен не отдаёт embed по обычной ссылке <code className="text-xs">/video/watch/…</code>.
+                      Открой видео → «Поделиться» → «Встроить» и вставь ссылку вида{" "}
+                      <code className="text-xs">https://dzen.ru/embed/…</code>
+                    </>
+                  ) : (
+                    <>
+                      Прямой embed не найден. Можно открыть оригинал или попробовать другую ссылку.
+                      Для Rumble/YouTube/VK обычно работает автоматически.
+                    </>
+                  )}
+                </div>
+              )}
+
               {(result.embedUrl || result.embedHtml) && (
                 <div className="player-wrap mb-5">
                   {result.embedHtml ? (
@@ -209,7 +226,7 @@ export default function Home() {
             Поддерживаемые платформы
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {["YouTube", "VK Video", "Rutube", "Twitch", "Vimeo", "OK.ru", "Direct MP4/HLS", "OG pages"].map(
+            {["YouTube", "VK Video", "Rutube", "Rumble", "Twitch", "Vimeo", "OK.ru", "TikTok", "Dzen", "Direct MP4/HLS"].map(
               (p) => (
                 <span
                   key={p}
