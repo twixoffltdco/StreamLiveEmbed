@@ -36,8 +36,32 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
       });
-      const data = await res.json();
+      let data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка");
+
+      // Client-side oEmbed fallback (Rumble/TikTok often blocked on server IPs)
+      if (!data.embedUrl && !data.embedHtml) {
+        const u = (data.url || url).toLowerCase();
+        try {
+          if (u.includes("rumble.com")) {
+            const oe = await fetch(
+              "https://rumble.com/api/Media/oembed.json?url=" + encodeURIComponent(data.url || url)
+            ).then((r) => (r.ok ? r.json() : null));
+            if (oe?.html) {
+              const src = (oe.html.match(/src=["']([^"']+)["']/i) || [])[1];
+              data = {
+                ...data,
+                title: oe.title || data.title,
+                image: oe.thumbnail_url || data.image,
+                embedHtml: oe.html,
+                embedUrl: src || null,
+                platform: "Rumble",
+                type: "video",
+              };
+            }
+          }
+        } catch (_) {}
+      }
       setResult(data);
     } catch (err: any) {
       setError(err.message || "Не удалось обработать ссылку");

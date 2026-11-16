@@ -183,30 +183,41 @@ async function tryOEmbed(
   author_name?: string;
 } | null> {
   const platform = detectPlatform(url);
-  const endpoints: Record<string, string> = {
-    YouTube: `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
-    Vimeo: `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`,
-    Rutube: `https://rutube.ru/api/oembed/?url=${encodeURIComponent(url)}&format=json`,
-    Rumble: `https://rumble.com/api/Media/oembed.json?url=${encodeURIComponent(url)}`,
-    TikTok: `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
-    Dailymotion: `https://www.dailymotion.com/services/oembed?url=${encodeURIComponent(url)}&format=json`,
-    Streamable: `https://api.streamable.com/oembed.json?url=${encodeURIComponent(url)}`,
+  const endpoints: Record<string, string[]> = {
+    YouTube: [`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`],
+    Vimeo: [`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`],
+    Rutube: [`https://rutube.ru/api/oembed/?url=${encodeURIComponent(url)}&format=json`],
+    Rumble: [
+      `https://rumble.com/api/Media/oembed.json?url=${encodeURIComponent(url)}`,
+      `https://wn0.rumble.com/api/Media/oembed.json?url=${encodeURIComponent(url)}`,
+    ],
+    TikTok: [`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`],
+    Dailymotion: [`https://www.dailymotion.com/services/oembed?url=${encodeURIComponent(url)}&format=json`],
+    Streamable: [`https://api.streamable.com/oembed.json?url=${encodeURIComponent(url)}`],
   };
 
-  const endpoint = endpoints[platform];
-  if (!endpoint) return null;
+  const list = endpoints[platform];
+  if (!list) return null;
 
-  try {
-    const res = await fetch(endpoint, {
-      headers: { "User-Agent": UA, Accept: "application/json" },
-      signal: AbortSignal.timeout(8000),
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  for (const endpoint of list) {
+    try {
+      const res = await fetch(endpoint, {
+        headers: {
+          "User-Agent": UA,
+          Accept: "application/json",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(12000),
+        cache: "no-store",
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && (data.html || data.thumbnail_url || data.title)) return data;
+    } catch (e) {
+      console.error("[oembed]", platform, endpoint, e);
+    }
   }
+  return null;
 }
 
 function buildEmbedHtml(embedUrl: string): string {
